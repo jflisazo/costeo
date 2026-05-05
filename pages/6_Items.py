@@ -26,15 +26,15 @@ left, right = st.columns([2, 3])
 
 # ── PANEL IZQUIERDO: Items ────────────────────────────────────────────────────
 with left:
-    st.subheader(f"Ítems ({len(s.items)})")
+    st.subheader(f"Ítems ({len(s['items'])})")
 
     COLS_ITEM = ["tipo", "numero", "descripcion", "unidad", "cantidad",
                  "costo_unitario", "costo_total"]
 
     def items_a_df():
-        if not s.items:
+        if not s["items"]:
             return pd.DataFrame(columns=COLS_ITEM)
-        return pd.DataFrame([{c: getattr(i, c, "") for c in COLS_ITEM} for i in s.items])
+        return pd.DataFrame([{c: getattr(i, c, "") for c in COLS_ITEM} for i in s["items"]])
 
     edited_items = st.data_editor(
         items_a_df(),
@@ -61,7 +61,7 @@ with left:
                 if not row.get("numero"):
                     continue
                 item = Item(
-                    tipo=str(row.get("tipo", "Item")),
+                    tipo="Título" if str(row.get("tipo", "Item")) == "Título" else "Item",
                     numero=str(row["numero"]),
                     descripcion=str(row.get("descripcion", "")),
                     unidad=str(row.get("unidad", "")),
@@ -70,7 +70,7 @@ with left:
                     costo_total=float(row.get("costo_total") or 0),
                 )
                 nuevos.append(item)
-            s.items = nuevos
+            s["items"] = nuevos
             guardar()
             st.success("Ítems guardados")
             st.rerun()
@@ -82,11 +82,11 @@ with left:
                 s.materiales, s.combustibles, s.subcontratos, s.auxiliares, s.transportes,
             )
             # Actualizar costos unitarios de ítems
-            for i, item in enumerate(s.items):
+            for i, item in enumerate(s["items"]):
                 if item.tipo == "Item":
                     cu = calc_cu_item(item.numero, s.datos_cd)
                     ct = round(cu * item.cantidad, 2)
-                    s.items[i] = item.model_copy(update={
+                    s["items"][i] = item.model_copy(update={
                         "costo_unitario": round(cu, 4),
                         "costo_total": ct,
                     })
@@ -96,7 +96,7 @@ with left:
 
 # ── PANEL DERECHO: Datos CD del ítem seleccionado ─────────────────────────────
 with right:
-    items_obra = [i for i in s.items if i.tipo == "Item"]
+    items_obra = [i for i in s["items"] if i.tipo == "Item"]
     if not items_obra:
         st.info("Cargá ítems de obra en el panel izquierdo para ver el análisis de costos.")
     else:
@@ -177,9 +177,9 @@ with right:
 
                 # Actualizar costo del ítem
                 cu = calc_cu_item(sel_item.numero, s.datos_cd)
-                idx = next(i for i, x in enumerate(s.items) if x.numero == sel_item.numero)
-                ct = round(cu * s.items[idx].cantidad, 2)
-                s.items[idx] = s.items[idx].model_copy(update={
+                idx = next(i for i, x in enumerate(s["items"]) if x.numero == sel_item.numero)
+                ct = round(cu * s["items"][idx].cantidad, 2)
+                s["items"][idx] = s["items"][idx].model_copy(update={
                     "costo_unitario": round(cu, 4),
                     "costo_total": ct,
                 })

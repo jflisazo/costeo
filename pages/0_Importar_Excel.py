@@ -75,7 +75,7 @@ if importar:
 
         # Resumen de lo importado
         p = st.session_state.proyecto
-        items_obra = [i for i in st.session_state.items if i.tipo == "Item"]
+        items_obra = [i for i in st.session_state["items"] if i.tipo == "Item"]
 
         st.success("✅ Importación completada")
         st.subheader("Resumen importado")

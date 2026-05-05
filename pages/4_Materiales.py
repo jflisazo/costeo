@@ -45,7 +45,7 @@ with tab1:
 
     if st.button("⚙️ Recalcular y Guardar", key="btn_mat"):
         nuevos = []
-        for i, row in edited_mat.iterrows():
+        for i, (_, row) in enumerate(edited_mat.iterrows()):
             if not row.get("descripcion"):
                 continue
             m = Material(
@@ -141,7 +141,7 @@ with tab3:
 
     if st.button("⚙️ Guardar subcontratos", key="btn_sub"):
         nuevos = []
-        for i, row in edited_sub.iterrows():
+        for i, (_, row) in enumerate(edited_sub.iterrows()):
             if not row.get("descripcion"):
                 continue
             s = Subcontrato(

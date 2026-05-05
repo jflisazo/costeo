@@ -80,15 +80,15 @@ with col_btn:
                 })
             else:
                 eq = Equipo(
-                    nombre=        row.get("nombre", ""),
-                    marca=         row.get("marca", ""),
-                    modelo=        row.get("modelo", ""),
+                    nombre=        str(row.get("nombre") or ""),
+                    marca=         str(row.get("marca") or ""),
+                    modelo=        str(row.get("modelo") or ""),
                     potencia=      float(row.get("potencia") or 0),
-                    moneda=        row.get("moneda", "USD"),
+                    moneda=        str(row.get("moneda") or "USD"),
                     precio=        float(row.get("precio") or 0),
                     k_combustible= float(row.get("k_combustible") or 0),
-                    propiedad=     row.get("propiedad", "Propio"),
-                    metodo_costeo= row.get("metodo_costeo", "KEOPS"),
+                    propiedad=     str(row.get("propiedad") or "Propio"),
+                    metodo_costeo= str(row.get("metodo_costeo") or "KEOPS"),
                 )
             eq = calc_costo_equipo(eq, proyecto, precio_gasoil)
             nuevos.append(eq)

@@ -12,7 +12,7 @@ st.title("💰 Presupuesto y Plan de Trabajos")
 s = st.session_state
 p = s.proyecto
 
-items_obra = [i for i in s.items if i.tipo == "Item"]
+items_obra = [i for i in s["items"] if i.tipo == "Item"]
 gg_items = [g for g in s.gastos_generales if g.tipo == "Item"]
 
 if not items_obra:
@@ -49,7 +49,7 @@ coef_gg = (costo_total / costo_cd) if costo_cd else 1
 coef_oferta = (1 + margen_pct / 100) * coef_gg
 
 rows = []
-for i in s.items:
+for i in s["items"]:
     pu_oferta = i.costo_unitario * coef_oferta if i.tipo == "Item" else 0
     pt_oferta = pu_oferta * i.cantidad if i.tipo == "Item" else 0
     rows.append({

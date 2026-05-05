@@ -1,3 +1,5 @@
+from typing import Literal
+
 import streamlit as st
 import pandas as pd
 from state import init_state, guardar
@@ -48,8 +50,8 @@ col1, col2 = st.columns([1, 4])
 with col1:
     if st.button("⚙️ Recalcular y Guardar", use_container_width=True):
         nuevos = []
-        for i, row in edited.iterrows():
-            tipo = str(row.get("tipo", "Item"))
+        for i, (_, row) in enumerate(edited.iterrows()):
+            tipo: Literal["Título", "Item"] = "Título" if str(row.get("tipo", "Item")) == "Título" else "Item"
             recurso = str(row.get("recurso", ""))
             if not recurso:
                 continue

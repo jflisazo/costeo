@@ -18,7 +18,7 @@ s = st.session_state
 p = s.proyecto
 plazo = max(p.plazo_meses, 1)
 
-items_obra = [i for i in s.items if i.tipo == "Item" and i.costo_total > 0]
+items_obra = [i for i in s["items"] if i.tipo == "Item" and i.costo_total > 0]
 if not items_obra:
     st.info("No hay ítems con costo calculado. Completá la página **Ítems de Obra** primero.")
     st.stop()
@@ -63,19 +63,19 @@ items_sel_ids = col2.multiselect(
 
 if col3.button("Aplicar perfil") and perfil != "Manual":
     meses = list(range(1, plazo + 1))
+    if perfil == "Uniforme":
+        dist = [1 / plazo] * plazo
+    elif perfil == "Rampa (inicio lento)":
+        raw = [float(m) for m in meses]
+        s_raw = sum(raw)
+        dist = [r / s_raw for r in raw]
+    else:  # "Campana (pico al 50%)"
+        import math
+        mid = plazo / 2
+        raw = [math.exp(-((m - mid) ** 2) / (2 * (plazo / 4) ** 2)) for m in meses]
+        s_raw = sum(raw)
+        dist = [r / s_raw for r in raw]
     for item_id in items_sel_ids:
-        if perfil == "Uniforme":
-            dist = [1 / plazo] * plazo
-        elif perfil == "Rampa (inicio lento)":
-            raw = [m for m in meses]
-            s_raw = sum(raw)
-            dist = [r / s_raw for r in raw]
-        elif perfil == "Campana (pico al 50%)":
-            import math
-            mid = plazo / 2
-            raw = [math.exp(-((m - mid) ** 2) / (2 * (plazo / 4) ** 2)) for m in meses]
-            s_raw = sum(raw)
-            dist = [r / s_raw for r in raw]
         if item_id in plan_map:
             plan_map[item_id] = plan_map[item_id].model_copy(update={"distribucion": dist})
     s.plan_trabajos = list(plan_map.values())

@@ -72,7 +72,7 @@ else:
     # Resumen rápido
     equipos = st.session_state.equipos
     materiales = st.session_state.materiales
-    items = [i for i in st.session_state.items if i.tipo == "Item"]
+    items = [i for i in st.session_state["items"] if i.tipo == "Item"]
     datos_cd = st.session_state.datos_cd
     gg = st.session_state.gastos_generales
 

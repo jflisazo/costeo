@@ -39,7 +39,9 @@ def _shared_strings(z: zipfile.ZipFile) -> list[str]:
 def _sheet_rels(z: zipfile.ZipFile) -> dict[str, str]:
     xml = z.read("xl/_rels/workbook.xml.rels")
     root = ET.fromstring(xml)
-    return {r.get("Id"): r.get("Target") for r in root}
+    return {rid: target for r in root
+            if (rid := r.get("Id")) is not None
+            and (target := r.get("Target")) is not None}
 
 
 def _workbook_sheets(z: zipfile.ZipFile) -> dict[str, str]:

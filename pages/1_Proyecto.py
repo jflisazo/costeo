@@ -45,12 +45,12 @@ with st.form("form_proyecto"):
 
 if submitted:
     nuevo_proyecto = Proyecto(
-        empresa=empresa,
-        obra=obra,
-        comitente=comitente,
+        empresa=empresa or "",
+        obra=obra or "",
+        comitente=comitente or "",
         plazo_meses=int(plazo),
         moneda_oferta=moneda,
-        mes_base=mes_base,
+        mes_base=mes_base or "",
         cotizaciones={"USD": usd, "EUR": eur},
         plazo_pago=int(plazo_pago),
         anticipo=anticipo,
@@ -70,7 +70,7 @@ if submitted:
                 s.equipos, s.mo_jornalizada, s.mo_mensualizada,
                 s.materiales, s.combustibles, s.subcontratos,
                 s.auxiliares, s.transportes,
-                s.datos_cd, s.items, s.gastos_generales,
+                s.datos_cd, s["items"], s.gastos_generales,
             )
         for k, v in resultado.items():
             setattr(st.session_state, k, v)
@@ -96,7 +96,7 @@ if s.equipos:
     c3.metric("Gas Oil", f"${gasoil:,.2f}/lt" if gasoil else "—")
     c4.metric("Equipos cargados", len(s.equipos))
 
-    items_obra = [i for i in s.items if i.tipo == "Item"]
+    items_obra = [i for i in s["items"] if i.tipo == "Item"]
     if items_obra:
         costo_cd = sum(i.costo_total for i in items_obra)
         total_gg = sum(g.total for g in s.gastos_generales if g.tipo == "Item")

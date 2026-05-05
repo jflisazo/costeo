@@ -67,7 +67,7 @@ def estado_a_dict() -> dict:
         "subcontratos": _ser(s.subcontratos),
         "auxiliares": _ser(s.auxiliares),
         "transportes": _ser(s.transportes),
-        "items": _ser(s.items),
+        "items": _ser(s["items"]),
         "datos_cd": _ser(s.datos_cd),
         "gastos_generales": _ser(s.gastos_generales),
         "plan_trabajos": _ser(s.plan_trabajos),
@@ -84,7 +84,7 @@ def dict_a_estado(d: dict):
     st.session_state.subcontratos = _de(Subcontrato, d.get("subcontratos", []))
     st.session_state.auxiliares = _de(Auxiliar, d.get("auxiliares", []))
     st.session_state.transportes = _de(CicloTransporte, d.get("transportes", []))
-    st.session_state.items = _de(Item, d.get("items", []))
+    st.session_state["items"] = _de(Item, d.get("items", []))
     st.session_state.datos_cd = _de(DatoCD, d.get("datos_cd", []))
     st.session_state.gastos_generales = _de(GastoGeneral, d.get("gastos_generales", []))
     st.session_state.plan_trabajos = _de(PlanTrabajo, d.get("plan_trabajos", []))
