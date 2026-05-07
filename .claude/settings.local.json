@@ -9,7 +9,15 @@
       "Bash(curl -s http://localhost:8000/api/proyectos/2)",
       "Bash(python3 -c ' *)",
       "Bash(python3 *)",
-      "Bash(curl -s -X POST http://localhost:8000/api/proyectos/2/recalcular)"
+      "Bash(curl -s -X POST http://localhost:8000/api/proyectos/2/recalcular)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(make typecheck *)",
+      "Bash(gh run *)",
+      "Bash(git pull *)",
+      "Bash(git stash *)",
+      "Bash(git commit *)"
     ]
   }
 }
