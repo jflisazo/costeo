@@ -1,2 +1,6 @@
 __pycache__/
 *.py[cod]
+
+# Node
+node_modules/
+/package-lock.json
