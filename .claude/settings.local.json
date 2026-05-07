@@ -17,7 +17,23 @@
       "Bash(gh run *)",
       "Bash(git pull *)",
       "Bash(git stash *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(streamlit run *)",
+      "Bash(mkdir -p ~/.streamlit)",
+      "Bash(printf '[browser]\\\\ngatherUsageStats = false\\\\n')",
+      "Bash(printf '[general]\\\\nemail = \"\"\\\\n')",
+      "Bash(wslview http://localhost:8501)",
+      "Bash(cmd.exe /c start http://localhost:8501)",
+      "Bash(xdg-open http://localhost:8501)",
+      "Bash(pip list *)",
+      "Bash(grep -E '__pycache__|\\\\.pyc$')",
+      "Bash(xargs git rm --cached)",
+      "Bash(gh api *)",
+      "Bash(xargs -I{} gh run watch {} --exit-status)",
+      "Bash(pip index *)",
+      "Bash(npm outdated *)",
+      "Bash(npm update *)",
+      "Bash(npm ls *)"
     ]
   }
 }
