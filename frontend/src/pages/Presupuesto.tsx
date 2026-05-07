@@ -153,7 +153,7 @@ export default function Presupuesto() {
               <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
               <YAxis yAxisId="left" tickFormatter={v => `$${(v / 1e9).toFixed(1)}B`} />
               <YAxis yAxisId="right" orientation="right" tickFormatter={v => `$${(v / 1e9).toFixed(1)}B`} />
-              <Tooltip formatter={(v: number) => `$${fmt(v)}`} />
+              <Tooltip formatter={v => `$${fmt(Number(v))}`} />
               <Legend />
               <Bar yAxisId="left" dataKey="costo" name="Costo mensual" fill="#1677ff" />
               <Line yAxisId="right" type="monotone" dataKey="acumulado" name="Curva S" stroke="#f5222d" dot={false} strokeWidth={2} />
