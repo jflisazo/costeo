@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  Button, Card, Input, List, Modal, Space, Typography, Popconfirm, Spin, Empty,
+  Button, Card, Input, List, Modal, Typography, Popconfirm, Spin, Empty,
 } from 'antd'
 import { PlusOutlined, FolderOpenOutlined, DeleteOutlined } from '@ant-design/icons'
 import { api } from '../api/client'

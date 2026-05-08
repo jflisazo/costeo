@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Card, Col, Row, Slider, Spin, Table, Tag, Typography } from 'antd'
+import { Card, Col, Row, Slider, Spin, Table, Typography } from 'antd'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  LineChart, Line, ResponsiveContainer,
+  Line, ResponsiveContainer,
 } from 'recharts'
 import type { ColumnsType } from 'antd/es/table'
 import { useProyecto } from '../hooks/useProyecto'

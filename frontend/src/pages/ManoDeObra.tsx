@@ -9,14 +9,6 @@ import { useState } from 'react'
 const { Title } = Typography
 const fmt = (n: number) => n.toLocaleString('es-AR', { maximumFractionDigits: 2 })
 
-function useInlineEdit<T>(initial: T[]) {
-  const [data, setData] = useState<T[]>(initial)
-  const update = (idx: number, field: keyof T, val: unknown) => {
-    setData(prev => prev.map((r, i) => i === idx ? { ...r, [field]: val } : r))
-  }
-  return { data, setData, update }
-}
-
 export default function ManoDeObra() {
   const { id } = useParams<{ id: string }>()
   const pid = Number(id)
@@ -30,14 +22,14 @@ export default function ManoDeObra() {
     <>
       <Title level={3}>👷 Mano de Obra</Title>
       <Tabs items={[
-        { key: 'jorn', label: 'Jornalizada', children: <TabJorn pid={pid} rec={rec} patch={patch} recalc={recalc} /> },
-        { key: 'mens', label: 'Mensualizada', children: <TabMens pid={pid} rec={rec} patch={patch} recalc={recalc} /> },
+        { key: 'jorn', label: 'Jornalizada', children: <TabJorn rec={rec} patch={patch} recalc={recalc} /> },
+        { key: 'mens', label: 'Mensualizada', children: <TabMens rec={rec} patch={patch} recalc={recalc} /> },
       ]} />
     </>
   )
 }
 
-function TabJorn({ pid, rec, patch, recalc }: any) {
+function TabJorn({ rec, patch, recalc }: any) {
   const [rows, setRows] = useState<MOJornalizada[]>(rec.estado.mo_jornalizada)
 
   const upd = (idx: number, f: keyof MOJornalizada, v: unknown) =>
@@ -91,7 +83,7 @@ function TabJorn({ pid, rec, patch, recalc }: any) {
   )
 }
 
-function TabMens({ pid, rec, patch, recalc }: any) {
+function TabMens({ rec, patch, recalc }: any) {
   const [rows, setRows] = useState<MOMensualizada[]>(rec.estado.mo_mensualizada)
 
   const upd = (idx: number, f: keyof MOMensualizada, v: unknown) =>

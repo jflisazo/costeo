@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import {
-  Button, Collapse, Descriptions, InputNumber, Popconfirm, Select,
+  Button, Collapse, InputNumber, Popconfirm, Select,
   Space, Spin, Table, Typography, message,
 } from 'antd'
 import { PlusOutlined, DeleteOutlined, SyncOutlined } from '@ant-design/icons'

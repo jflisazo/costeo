@@ -1,7 +1,7 @@
 import { Outlet, useNavigate, useParams, useLocation } from 'react-router-dom'
 import { Layout, Menu, Typography, Spin, Tag } from 'antd'
 import {
-  SettingOutlined, ToolOutlined, CarOutlined, TeamOutlined,
+  SettingOutlined, ToolOutlined, TeamOutlined,
   InboxOutlined, FireOutlined, BarsOutlined, FundProjectionScreenOutlined,
   TableOutlined, DollarOutlined, BarChartOutlined, ImportOutlined,
   HomeOutlined,
