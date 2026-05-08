@@ -33,7 +33,22 @@
       "Bash(pip index *)",
       "Bash(npm outdated *)",
       "Bash(npm update *)",
-      "Bash(npm ls *)"
+      "Bash(npm ls *)",
+      "Bash(git rm *)",
+      "Bash(npm install)",
+      "Bash(git *)",
+      "Bash(npm install *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5173/)",
+      "Bash(curl -s http://localhost:5173/src/main.tsx -o /dev/null -w \"main.tsx: %{http_code}\\\\n\")",
+      "Bash(curl -s http://localhost:5173/src/App.tsx -o /dev/null -w \"App.tsx: %{http_code}\\\\n\")",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(uvicorn backend.main:app *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8000/api/proyectos)",
+      "Bash(curl -s -o /dev/null -w \"/docs: %{http_code}\\\\n\" http://localhost:8000/docs)",
+      "Bash(wslview *)",
+      "Bash(cmd.exe *)",
+      "Bash(echo \"exit code: $?\")",
+      "Bash(npx tsc *)"
     ]
   }
 }
