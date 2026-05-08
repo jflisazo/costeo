@@ -48,7 +48,8 @@
       "Bash(wslview *)",
       "Bash(cmd.exe *)",
       "Bash(echo \"exit code: $?\")",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }
