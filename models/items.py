@@ -7,7 +7,8 @@ TIPOS_RECURSO = ["Equipos", "Mano de Obra", "Materiales", "Combustibles", "Subco
 
 class DatoCD(BaseModel):
     """Una fila en la tabla maestra de costos directos."""
-    item_id: str                    # número del ítem (ej: "00.20.004.0001")
+    item_aux: Literal["Item", "Aux"] = "Item"  # contenedor: ítem de obra o auxiliar
+    item_id: str                    # número de ítem (si item_aux="Item") o descripción del auxiliar (si "Aux")
     item_uid: str = ""              # UID único del ítem (resuelve duplicados de número)
     tarea: str = ""                 # descripción de la tarea
     tarea_unidad: str = ""          # unidad de la tarea (m3, m2, etc.)

@@ -143,6 +143,7 @@ export interface CicloTransporte {
 }
 
 export interface DatoCD {
+  item_aux: 'Item' | 'Aux'
   item_id: string
   tarea: string
   tarea_unidad: string
@@ -159,6 +160,7 @@ export interface DatoCD {
 export interface Item {
   tipo: 'Título' | 'Item'
   numero: string
+  uid?: string
   descripcion: string
   unidad: string
   cantidad: number

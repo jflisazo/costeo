@@ -31,6 +31,38 @@ def _precio_gasoil(combustibles: list) -> float:
     return 0.0
 
 
+def _migrar_aux_recursos(datos_cd: list, auxiliares: list) -> list:
+    """Mueve filas de Auxiliar.recursos (legacy) a datos_cd con item_aux='Aux'.
+    Se ejecuta una sola vez por auxiliar: si ya hay filas datos_cd Aux para ese
+    auxiliar, se asume que ya migró y se ignoran las recursos legacy."""
+    nuevas = list(datos_cd)
+    for aux in auxiliares:
+        if not aux.recursos:
+            continue
+        ya_migrado = any(
+            d.item_aux == "Aux" and d.item_id == aux.descripcion
+            for d in nuevas
+        )
+        if ya_migrado:
+            continue
+        for r in aux.recursos:
+            nuevas.append(DatoCD(
+                item_aux="Aux",
+                item_id=aux.descripcion,
+                tarea=r.tarea,
+                tarea_unidad=r.tarea_unidad,
+                incidencia=r.incidencia,
+                rendimiento=r.rendimiento,
+                tipo_recurso=r.tipo_recurso,
+                recurso=r.recurso,
+                cuantia=r.cuantia,
+                comentario=r.comentario,
+                cuantia_por_unidad=r.cuantia_por_unidad,
+                costo_unitario=r.costo_unitario,
+            ))
+    return nuevas
+
+
 def recalcular_todo(
     proyecto: Proyecto,
     equipos: list,
@@ -67,27 +99,29 @@ def recalcular_todo(
     # 5. Subcontratos
     subcontratos = [calc_costo_subcontrato(s, proyecto) for s in subcontratos]
 
-    # 6. Auxiliares (sus recursos se recalculan igual que datos_cd)
+    # 6. Auxiliares — migrar aux.recursos legacy a datos_cd (item_aux="Aux"),
+    #    luego recalcular y agregar el costo de cada auxiliar.
+    datos_cd = _migrar_aux_recursos(datos_cd, auxiliares)
+
     nuevos_aux = []
     for aux in auxiliares:
-        nuevos_rec = []
-        for rec in aux.recursos:
-            cup = _cuantia_por_unidad(rec.cuantia, rec.rendimiento, rec.incidencia, rec.tipo_recurso)
-            costo_rec = lookup_costo_recurso(
-                rec.tipo_recurso, rec.recurso,
-                equipos, mo_jorn, mo_mens,
-                materiales, combustibles, subcontratos,
-                nuevos_aux,  # auxiliares ya procesados
-                transportes,
-            )
-            nuevos_rec.append(rec.model_copy(update={
-                "cuantia_por_unidad": round(cup, 6),
-                "costo_unitario": round(cup * costo_rec, 4),
-            }))
-        costo_aux = sum(r.costo_unitario for r in nuevos_rec)
+        # Filas datos_cd Aux de este auxiliar (procesadas con los auxs ya recalculados)
+        filas_aux = [d for d in datos_cd
+                     if d.item_aux == "Aux" and d.item_id == aux.descripcion]
+        filas_recalc = recalcular_datos_cd(
+            filas_aux, equipos, mo_jorn, mo_mens,
+            materiales, combustibles, subcontratos,
+            nuevos_aux,  # solo auxs ya recalculados (sin anidamiento hacia adelante)
+            transportes,
+        )
+        # Reemplazar en datos_cd
+        otros = [d for d in datos_cd
+                 if not (d.item_aux == "Aux" and d.item_id == aux.descripcion)]
+        datos_cd = otros + filas_recalc
+        costo_aux = round(sum(r.costo_unitario for r in filas_recalc), 4)
         nuevos_aux.append(aux.model_copy(update={
-            "recursos": nuevos_rec,
-            "costo": round(costo_aux, 4),
+            "recursos": [],          # legacy: vaciar, datos_cd es la fuente
+            "costo": costo_aux,
         }))
     auxiliares = nuevos_aux
 
@@ -100,11 +134,14 @@ def recalcular_todo(
         transportes_nuevos.append(calc_ciclo_transporte(t, costo_hora_eq))
     transportes = transportes_nuevos
 
-    # 8. Datos CD
-    datos_cd = recalcular_datos_cd(
-        datos_cd, equipos, mo_jorn, mo_mens,
+    # 8. Datos CD — recalcular filas de ítems (las Aux ya están actualizadas).
+    filas_item = [d for d in datos_cd if d.item_aux == "Item"]
+    filas_item = recalcular_datos_cd(
+        filas_item, equipos, mo_jorn, mo_mens,
         materiales, combustibles, subcontratos, auxiliares, transportes,
     )
+    filas_aux_final = [d for d in datos_cd if d.item_aux == "Aux"]
+    datos_cd = filas_aux_final + filas_item
 
     # 9. Ítems
     items_nuevos = []

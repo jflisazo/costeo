@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import {
-  Button, Col, Divider, InputNumber, Popconfirm, Row, Select,
-  Space, Spin, Table, Tag, Typography, message,
+  Button, Col, Input, InputNumber, Popconfirm, Row, Segmented, Select,
+  Space, Spin, Table, Typography, message,
 } from 'antd'
 import { PlusOutlined, DeleteOutlined, SyncOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
@@ -19,9 +19,9 @@ const TIPOS_RECURSO = [
 ]
 
 function recursosOpciones(tipo: string, estado: ProyectoEstado): string[] {
-  const t = tipo.toLowerCase()
+  const t = (tipo || '').toLowerCase()
   if (t.includes('equipo'))       return estado.equipos.map(e => e.nombre)
-  if (t.includes('mano') || t.includes('mo')) return [
+  if (t.includes('mano') || t === 'mo') return [
     ...estado.mo_jornalizada.map(m => m.funcion),
     ...estado.mo_mensualizada.map(m => m.funcion),
   ]
@@ -29,15 +29,17 @@ function recursosOpciones(tipo: string, estado: ProyectoEstado): string[] {
   if (t.includes('combustible'))  return estado.combustibles.map(c => c.descripcion)
   if (t.includes('subcontrat'))   return estado.subcontratos.map(s => s.descripcion)
   if (t.includes('auxiliar') || t.includes('elaborado')) return estado.auxiliares.map(a => a.descripcion)
-  if (t.includes('tpte') || t.includes('transport'))     return estado.transportes.map(t => t.descripcion)
+  if (t.includes('tpte') || t.includes('transport'))     return estado.transportes.map(tr => tr.descripcion)
   return []
 }
 
 const EMPTY_CD: DatoCD = {
-  item_id: '', tarea: '', tarea_unidad: '', incidencia: 1, rendimiento: 1,
-  tipo_recurso: 'Equipos', recurso: '', cuantia: 0, comentario: '',
-  cuantia_por_unidad: 0, costo_unitario: 0,
+  item_aux: 'Item', item_id: '', tarea: '', tarea_unidad: '',
+  incidencia: 1, rendimiento: 1, tipo_recurso: 'Equipos', recurso: '',
+  cuantia: 0, comentario: '', cuantia_por_unidad: 0, costo_unitario: 0,
 }
+
+type Filtro = 'Todo' | 'Item' | 'Aux'
 
 export default function Items() {
   const { id } = useParams<{ id: string }>()
@@ -46,37 +48,60 @@ export default function Items() {
   const patch = usePatch(pid)
   const recalc = useRecalcular(pid)
 
-  const [selectedItem, setSelectedItem] = useState<string | null>(null)
   const [cdRows, setCdRows] = useState<DatoCD[]>([])
   const [cdInit, setCdInit] = useState(false)
+  const [filtro, setFiltro] = useState<Filtro>('Todo')
+  const [busqueda, setBusqueda] = useState('')
 
   if (isLoading || !rec) return <Spin />
 
-  const { items, datos_cd } = rec.estado
+  const estado = rec.estado
+  const { items } = estado
 
-  if (!cdInit) { setCdRows(datos_cd); setCdInit(true) }
+  if (!cdInit) {
+    // Normalizar filas que vienen sin item_aux (proyectos antiguos)
+    const norm = estado.datos_cd.map(d => ({ ...d, item_aux: d.item_aux ?? 'Item' }))
+    setCdRows(norm)
+    setCdInit(true)
+  }
 
-  const selectedCD = cdRows.filter(d => d.item_id === selectedItem)
+  const itemsObra = items.filter(i => i.tipo === 'Item')
+  const auxList = estado.auxiliares
 
-  const updCD = (i: number, f: keyof DatoCD, v: unknown) => {
-    const globalIdx = cdRows.indexOf(selectedCD[i])
+  const itemOpciones = (iaux: 'Item' | 'Aux') =>
+    iaux === 'Item'
+      ? itemsObra.map(i => ({ value: i.numero, label: `${i.numero} — ${i.descripcion}` }))
+      : auxList.map(a => ({ value: a.descripcion, label: a.descripcion }))
+
+  const filasFiltradas = useMemo(() => {
+    const q = busqueda.trim().toLowerCase()
+    return cdRows
+      .map((r, idx) => ({ row: r, idx }))
+      .filter(({ row }) => filtro === 'Todo' || row.item_aux === filtro)
+      .filter(({ row }) => !q ||
+        row.item_id.toLowerCase().includes(q) ||
+        row.tarea.toLowerCase().includes(q) ||
+        row.recurso.toLowerCase().includes(q))
+  }, [cdRows, filtro, busqueda])
+
+  const updCD = (globalIdx: number, f: keyof DatoCD, v: unknown) => {
     setCdRows(prev => prev.map((r, j) => j === globalIdx ? { ...r, [f]: v } : r))
   }
 
   const addCD = () => {
-    if (!selectedItem) return
-    setCdRows(prev => [...prev, { ...EMPTY_CD, item_id: selectedItem }])
+    const base: DatoCD = { ...EMPTY_CD, item_aux: filtro === 'Aux' ? 'Aux' : 'Item' }
+    setCdRows(prev => [...prev, base])
   }
 
-  const delCD = (i: number) => {
-    const globalIdx = cdRows.indexOf(selectedCD[i])
+  const delCD = (globalIdx: number) => {
     setCdRows(prev => prev.filter((_, j) => j !== globalIdx))
   }
 
-  const guardarCD = async () => {
+  const guardar = async () => {
     await patch.mutateAsync({ seccion: 'datos_cd', data: cdRows })
     const result = await recalc.mutateAsync()
-    setCdRows(result.estado.datos_cd)
+    const norm = result.estado.datos_cd.map(d => ({ ...d, item_aux: d.item_aux ?? 'Item' }))
+    setCdRows(norm)
     message.success('Datos CD guardados y recalculados.')
   }
 
@@ -86,9 +111,7 @@ export default function Items() {
         ? <Text strong style={{ color: '#1677ff' }}>{v}</Text>
         : <Text code style={{ fontSize: 11 }}>{v}</Text> },
     { title: 'Descripción', dataIndex: 'descripcion', ellipsis: true,
-      render: (v, row) => row.tipo === 'Título'
-        ? <Text strong>{v}</Text>
-        : v },
+      render: (v, row) => row.tipo === 'Título' ? <Text strong>{v}</Text> : v },
     { title: 'Unid.', dataIndex: 'unidad', width: 60 },
     { title: 'Cantidad', dataIndex: 'cantidad', width: 90, align: 'right', render: v => fmt(v) },
     { title: 'CU Costo', dataIndex: 'costo_unitario', width: 110, align: 'right', render: v => fmt(v) },
@@ -99,43 +122,79 @@ export default function Items() {
       render: v => <Text type="success"><strong>{fmt(v)}</strong></Text> },
   ]
 
-  const cdCols = (estado: ProyectoEstado): ColumnsType<DatoCD> => [
-    { title: 'Tarea', dataIndex: 'tarea', width: 130,
-      render: (v, _, i) => <input className="ant-input ant-input-sm" style={{ width: 120 }} value={v} onChange={e => updCD(i, 'tarea', e.target.value)} /> },
-    { title: 'Unid.', dataIndex: 'tarea_unidad', width: 70,
-      render: (v, _, i) => <input className="ant-input ant-input-sm" style={{ width: 60 }} value={v} onChange={e => updCD(i, 'tarea_unidad', e.target.value)} /> },
-    { title: 'Incid.', dataIndex: 'incidencia', width: 80,
-      render: (v, _, i) => <InputNumber size="small" style={{ width: 70 }} value={v} step={0.1} onChange={val => updCD(i, 'incidencia', val ?? 1)} /> },
-    { title: 'Rendim.', dataIndex: 'rendimiento', width: 90,
-      render: (v, _, i) => <InputNumber size="small" style={{ width: 80 }} value={v} step={0.5} onChange={val => updCD(i, 'rendimiento', val ?? 1)} /> },
-    { title: 'Tipo recurso', dataIndex: 'tipo_recurso', width: 140,
-      render: (v, _, i) => (
-        <Select size="small" style={{ width: 130 }} value={v}
-          onChange={val => { updCD(i, 'tipo_recurso', val); updCD(i, 'recurso', '') }}
+  type FilaCD = { row: DatoCD; idx: number }
+  const cdCols: ColumnsType<FilaCD> = [
+    { title: 'Item/Aux', width: 90,
+      render: (_, { row, idx }) => (
+        <Select size="small" style={{ width: 80 }} value={row.item_aux}
+          onChange={val => { updCD(idx, 'item_aux', val); updCD(idx, 'item_id', '') }}
+          options={[{ value: 'Item' }, { value: 'Aux' }]} />
+      ) },
+    { title: 'Item', width: 200,
+      render: (_, { row, idx }) => {
+        const opts = itemOpciones(row.item_aux)
+        return <Select size="small" style={{ width: 190 }} value={row.item_id || undefined}
+          showSearch optionFilterProp="label"
+          onChange={val => updCD(idx, 'item_id', val)}
+          options={opts} />
+      } },
+    { title: 'Tarea', width: 140,
+      render: (_, { row, idx }) => (
+        <Input size="small" style={{ width: 130 }} value={row.tarea}
+          onChange={e => updCD(idx, 'tarea', e.target.value)} />
+      ) },
+    { title: 'Uni', width: 65,
+      render: (_, { row, idx }) => (
+        <Input size="small" style={{ width: 55 }} value={row.tarea_unidad}
+          onChange={e => updCD(idx, 'tarea_unidad', e.target.value)} />
+      ) },
+    { title: 'Incid.', width: 80,
+      render: (_, { row, idx }) => (
+        <InputNumber size="small" style={{ width: 70 }} value={row.incidencia} step={0.1}
+          onChange={v => updCD(idx, 'incidencia', v ?? 1)} />
+      ) },
+    { title: 'Rendim.', width: 85,
+      render: (_, { row, idx }) => (
+        <InputNumber size="small" style={{ width: 75 }} value={row.rendimiento} step={0.5}
+          onChange={v => updCD(idx, 'rendimiento', v ?? 1)} />
+      ) },
+    { title: 'Tipo', width: 140,
+      render: (_, { row, idx }) => (
+        <Select size="small" style={{ width: 130 }} value={row.tipo_recurso}
+          onChange={val => { updCD(idx, 'tipo_recurso', val); updCD(idx, 'recurso', '') }}
           options={TIPOS_RECURSO.map(t => ({ value: t }))} />
       ) },
-    { title: 'Recurso', dataIndex: 'recurso', width: 170,
-      render: (v, row, i) => {
+    { title: 'Recurso', width: 200,
+      render: (_, { row, idx }) => {
         const opts = recursosOpciones(row.tipo_recurso, estado)
-        return opts.length > 0
-          ? <Select size="small" style={{ width: 160 }} value={v || undefined} showSearch
-              onChange={val => updCD(i, 'recurso', val)}
-              options={opts.map(o => ({ value: o, label: o }))} />
-          : <input className="ant-input ant-input-sm" style={{ width: 160 }} value={v} onChange={e => updCD(i, 'recurso', e.target.value)} />
+        return <Select size="small" style={{ width: 190 }} value={row.recurso || undefined}
+          showSearch optionFilterProp="label"
+          onChange={val => updCD(idx, 'recurso', val)}
+          options={opts.map(o => ({ value: o, label: o }))} />
       } },
-    { title: 'Cuantía/día', dataIndex: 'cuantia', width: 100,
-      render: (v, _, i) => <InputNumber size="small" style={{ width: 90 }} value={v} step={0.1} onChange={val => updCD(i, 'cuantia', val ?? 0)} /> },
-    { title: 'Q/unid', dataIndex: 'cuantia_por_unidad', width: 90, align: 'right', render: v => fmt4(v) },
-    { title: 'CU $/unid', dataIndex: 'costo_unitario', width: 100, align: 'right',
-      render: v => <strong>{fmt4(v)}</strong> },
-    { title: '', width: 40, render: (_, __, i) =>
-      <Popconfirm title="¿Eliminar fila?" onConfirm={() => delCD(i)}>
-        <Button size="small" danger icon={<DeleteOutlined />} />
-      </Popconfirm> },
+    { title: 'Cuantía', width: 90,
+      render: (_, { row, idx }) => (
+        <InputNumber size="small" style={{ width: 80 }} value={row.cuantia} step={0.1}
+          onChange={v => updCD(idx, 'cuantia', v ?? 0)} />
+      ) },
+    { title: 'Q/unid', width: 90, align: 'right',
+      render: (_, { row }) => fmt4(row.cuantia_por_unidad) },
+    { title: 'CU $', width: 100, align: 'right',
+      render: (_, { row }) => <strong>{fmt4(row.costo_unitario)}</strong> },
+    { title: 'Comentario', width: 160,
+      render: (_, { row, idx }) => (
+        <Input size="small" style={{ width: 150 }} value={row.comentario}
+          onChange={e => updCD(idx, 'comentario', e.target.value)} />
+      ) },
+    { title: '', width: 40, fixed: 'right',
+      render: (_, { idx }) =>
+        <Popconfirm title="¿Eliminar fila?" onConfirm={() => delCD(idx)}>
+          <Button size="small" danger icon={<DeleteOutlined />} />
+        </Popconfirm> },
   ]
 
-  const costoCD = items.filter(i => i.tipo === 'Item').reduce((s, i) => s + i.costo_total, 0)
-  const precioTotal = items.filter(i => i.tipo === 'Item').reduce((s, i) => s + i.precio_total, 0)
+  const costoCD = itemsObra.reduce((s, i) => s + i.costo_total, 0)
+  const precioTotal = itemsObra.reduce((s, i) => s + i.precio_total, 0)
 
   return (
     <>
@@ -143,7 +202,8 @@ export default function Items() {
 
       <Row gutter={16} style={{ marginBottom: 12 }}>
         {[
-          { label: 'Ítems de obra', value: items.filter(i => i.tipo === 'Item').length },
+          { label: 'Ítems de obra', value: itemsObra.length },
+          { label: 'Filas Datos CD', value: cdRows.length },
           { label: 'Costo Directo Total', value: `$${fmt(costoCD)}` },
           { label: 'Precio Total', value: `$${fmt(precioTotal)}` },
         ].map(m => (
@@ -156,64 +216,52 @@ export default function Items() {
         ))}
       </Row>
 
-      <Text type="secondary">Hacé clic en un ítem para editar sus recursos (Datos CD)</Text>
-
       <Table
         dataSource={items}
         columns={itemCols}
-        rowKey={(_, i) => String(i)}
+        rowKey={row => row.uid || `${row.tipo}-${row.numero}`}
         size="small"
         pagination={false}
-        scroll={{ x: 860 }}
+        scroll={{ x: 860, y: 280 }}
         rowClassName={row => row.tipo === 'Título' ? 'row-titulo' : ''}
-        onRow={row => ({
-          onClick: () => row.tipo === 'Item' && setSelectedItem(row.numero),
-          style: {
-            cursor: row.tipo === 'Item' ? 'pointer' : 'default',
-            background: row.numero === selectedItem ? '#e6f4ff' : undefined,
-          },
-        })}
-        style={{ marginTop: 8 }}
       />
 
-      {selectedItem && (
-        <>
-          <Divider />
-          <Space style={{ marginBottom: 8 }}>
-            <Tag color="blue">
-              {items.find(i => i.numero === selectedItem)?.descripcion ?? selectedItem}
-            </Tag>
-            <Button icon={<PlusOutlined />} size="small" onClick={addCD}>Agregar recurso</Button>
-            <Button
-              type="primary" icon={<SyncOutlined />} size="small"
-              onClick={guardarCD}
-              loading={patch.isPending || recalc.isPending}
-            >
-              Guardar y Recalcular
-            </Button>
-          </Space>
+      <Title level={4} style={{ marginTop: 24 }}>Datos CD</Title>
+      <Space style={{ marginBottom: 8 }} wrap>
+        <Segmented value={filtro} onChange={v => setFiltro(v as Filtro)}
+          options={['Todo', 'Item', 'Aux']} />
+        <Input.Search placeholder="Filtrar por ítem, tarea o recurso"
+          value={busqueda} onChange={e => setBusqueda(e.target.value)}
+          allowClear style={{ width: 320 }} />
+        <Button icon={<PlusOutlined />} onClick={addCD}>Agregar fila</Button>
+        <Button type="primary" icon={<SyncOutlined />}
+          onClick={guardar} loading={patch.isPending || recalc.isPending}>
+          Guardar y Recalcular
+        </Button>
+      </Space>
 
-          <Table
-            dataSource={selectedCD}
-            columns={cdCols(rec.estado)}
-            rowKey={(_, i) => String(i)}
-            size="small"
-            pagination={false}
-            scroll={{ x: 1050 }}
-            summary={() => (
-              <Table.Summary.Row>
-                <Table.Summary.Cell index={0} colSpan={8} align="right">
-                  <strong>CU total del ítem:</strong>
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={8} align="right">
-                  <strong>{fmt4(selectedCD.reduce((s, r) => s + r.costo_unitario, 0))}</strong>
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={9} />
-              </Table.Summary.Row>
-            )}
-          />
-        </>
-      )}
+      <Table
+        dataSource={filasFiltradas}
+        columns={cdCols}
+        rowKey={({ idx }) => String(idx)}
+        size="small"
+        pagination={{ pageSize: 50, showSizeChanger: true, pageSizeOptions: [25, 50, 100, 200] }}
+        scroll={{ x: 1500 }}
+        summary={pageRows => {
+          const sumCU = pageRows.reduce((s, { row }) => s + row.costo_unitario, 0)
+          return (
+            <Table.Summary.Row>
+              <Table.Summary.Cell index={0} colSpan={10} align="right">
+                <strong>Σ CU (filas visibles):</strong>
+              </Table.Summary.Cell>
+              <Table.Summary.Cell index={10} align="right">
+                <strong>{fmt4(sumCU)}</strong>
+              </Table.Summary.Cell>
+              <Table.Summary.Cell index={11} colSpan={2} />
+            </Table.Summary.Row>
+          )
+        }}
+      />
     </>
   )
 }

@@ -197,7 +197,10 @@ def asignar_uids_items(items: List[Item], datos_cd: List[DatoCD]) -> Tuple[List[
 
 def calc_cu_item(item_id: str, datos: List[DatoCD], item_uid: str = "") -> float:
     """Suma los costo_unitario de todas las filas del ítem.
-    Usa item_uid (único) si está disponible, si no cae back a item_id."""
+    Usa item_uid (único) si está disponible, si no cae back a item_id.
+    Solo considera filas con item_aux='Item' (las 'Aux' alimentan auxiliares)."""
     if item_uid:
-        return sum(d.costo_unitario for d in datos if d.item_uid == item_uid)
-    return sum(d.costo_unitario for d in datos if d.item_id == item_id)
+        return sum(d.costo_unitario for d in datos
+                   if d.item_aux == "Item" and d.item_uid == item_uid)
+    return sum(d.costo_unitario for d in datos
+               if d.item_aux == "Item" and d.item_id == item_id)
