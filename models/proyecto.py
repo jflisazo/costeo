@@ -22,3 +22,8 @@ class Proyecto(BaseModel):
     horas_mes_eq: float = 200.0
     tasa_anual: float = 0.10     # tasa de interés anual
     vida_util_hs: float = 10000.0
+    # Parámetros globales de mano de obra (Excel: Resumen!K22/K23 -> Efi_MO / Incr_MO)
+    efi_mo: float = 1.0          # eficiencia de la mano de obra (divisor)
+    incr_mo: float = 0.0         # incremento de la mano de obra (multiplicador 1+x)
+    # Margen sobre costo total para precio de oferta (Excel: Resumen!G57)
+    coef_oferta: float = 1.0     # cociente precio_oferta / costo_directo

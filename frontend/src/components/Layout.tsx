@@ -4,7 +4,7 @@ import {
   SettingOutlined, ToolOutlined, TeamOutlined,
   InboxOutlined, FireOutlined, BarsOutlined, FundProjectionScreenOutlined,
   TableOutlined, DollarOutlined, BarChartOutlined, ImportOutlined,
-  HomeOutlined,
+  HomeOutlined, AppstoreOutlined, ExperimentOutlined, CalendarOutlined,
 } from '@ant-design/icons'
 import { useProyecto } from '../hooks/useProyecto'
 
@@ -19,8 +19,11 @@ const MENU: { key: string; label: string; icon: React.ReactNode }[] = [
   { key: 'combustibles', label: 'Combustibles',      icon: <FireOutlined /> },
   { key: 'subcontratos', label: 'Subcontratos',      icon: <BarsOutlined /> },
   { key: 'auxiliares',   label: 'Auxiliares',        icon: <FundProjectionScreenOutlined /> },
-  { key: 'items',        label: 'Ítems / Costos CD', icon: <TableOutlined /> },
+  { key: 'items',        label: 'Ítems',             icon: <TableOutlined /> },
+  { key: 'datos-cd',     label: 'Datos CD',          icon: <AppstoreOutlined /> },
+  { key: 'datos-aux',    label: 'Datos Aux',         icon: <ExperimentOutlined /> },
   { key: 'gg',           label: 'Gastos Generales',  icon: <DollarOutlined /> },
+  { key: 'gantt',        label: 'Gantt',             icon: <CalendarOutlined /> },
   { key: 'presupuesto',  label: 'Presupuesto',       icon: <BarChartOutlined /> },
   { key: 'importar',     label: 'Importar Excel',    icon: <ImportOutlined /> },
 ]

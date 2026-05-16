@@ -11,14 +11,9 @@ from typing import Any
 
 from models import (
     Proyecto, Equipo, MOJornalizada, MOMensualizada,
-    Material, Combustible, Subcontrato, Auxiliar, RecursoAux, CicloTransporte,
-    Item, DatoCD, GastoGeneral,
+    Material, Combustible, Subcontrato, Auxiliar, CicloTransporte,
+    Item, DatoCD, GastoGeneral, GanttFila,
 )
-from calculos import (
-    calc_costo_equipo, calc_costo_jornal, calc_costo_mensual,
-    calc_costo_material,
-)
-from calculos.materiales import calc_costo_combustible, calc_costo_subcontrato
 
 NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 
@@ -345,25 +340,29 @@ def _leer_items(rows: dict) -> list[Item]:
 
 
 def _leer_datos_cd(rows: dict) -> list[DatoCD]:
+    """Hoja 'Datos CD':
+    A Item/Aux | B Item | C Un | D Cantidad | E Tarea | F Uni | G Incid |
+    H Rendim | I Tipo | J Recurso | K Cuantía | L %HS paro | M %Esf RR |
+    N %Esf GO | O Unid | P Costo | Q Comentarios | R C Unit Tarea | S Costo Unit
+    """
     result: list[DatoCD] = []
-    # Fila 3 es header; datos desde fila 4
     for rn in sorted(rows.keys()):
         if rn < 4:
             continue
         row = rows[rn]
         tipo_fila = _str(row, "A")
-        if tipo_fila != "Item":
+        if tipo_fila != "Item":  # ignora Título y blank; en Datos CD las Aux van en otra hoja
             continue
         item_desc = _str(row, "B")
         if not item_desc:
             continue
-        # El número de ítem es la primera parte del campo B (hasta el primer espacio)
-        item_id = item_desc.split(" ")[0] if item_desc else ""
+        item_id = item_desc.split(" ")[0]
         tipo_recurso = _str(row, "I")
         recurso = _str(row, "J")
         if not recurso:
             continue
         result.append(DatoCD(
+            item_aux="Item",
             item_id=item_id,
             tarea=_str(row, "E"),
             tarea_unidad=_str(row, "F"),
@@ -372,14 +371,124 @@ def _leer_datos_cd(rows: dict) -> list[DatoCD]:
             tipo_recurso=tipo_recurso,
             recurso=recurso,
             cuantia=_float(row, "K"),
-            comentario=_str(row, "Q"),
-            cuantia_por_unidad=_float(row, "S"),  # ya calculado en Excel
+            perc_hs_paro=_float(row, "L"),
+            perc_esf_rr=_float(row, "M"),
+            perc_esf_go=_float(row, "N"),
+            unidad_recurso=_str(row, "O"),
+            costo_recurso=_float(row, "P"),
+            cu_tarea=_float(row, "R"),
             costo_unitario=_float(row, "S"),
+            comentario=_str(row, "Q"),
+        ))
+    return result
+
+
+def _leer_datos_aux(rows: dict) -> list[DatoCD]:
+    """Hoja 'Datos AUX' (sin columna Cantidad: una columna menos que Datos CD):
+    A Item/Aux | B Item (auxiliar) | C Un | D Tarea | E Uni | F Incid |
+    G Rendim | H Tipo | I Recurso | J Cuantía | K %HS paro | L %Esf RR |
+    M %Esf GO | N Unid | O Costo | P Comentarios | Q C Unit Tarea | R Costo Unit
+    """
+    result: list[DatoCD] = []
+    for rn in sorted(rows.keys()):
+        if rn < 4:
+            continue
+        row = rows[rn]
+        tipo_fila = _str(row, "A")
+        if tipo_fila not in ("Auxiliar", "Item"):
+            continue
+        aux_desc = _str(row, "B")
+        if not aux_desc:
+            continue
+        tipo_recurso = _str(row, "H")
+        recurso = _str(row, "I")
+        if not recurso:
+            continue
+        result.append(DatoCD(
+            item_aux="Aux",
+            item_id=aux_desc,
+            tarea=_str(row, "D"),
+            tarea_unidad=_str(row, "E"),
+            incidencia=_float(row, "F") or 1.0,
+            rendimiento=_float(row, "G") or 1.0,
+            tipo_recurso=tipo_recurso,
+            recurso=recurso,
+            cuantia=_float(row, "J"),
+            perc_hs_paro=_float(row, "K"),
+            perc_esf_rr=_float(row, "L"),
+            perc_esf_go=_float(row, "M"),
+            unidad_recurso=_str(row, "N"),
+            costo_recurso=_float(row, "O"),
+            cu_tarea=_float(row, "Q"),
+            costo_unitario=_float(row, "R"),
+            comentario=_str(row, "P"),
+        ))
+    return result
+
+
+def _leer_auxiliares(rows: dict) -> list[Auxiliar]:
+    """Hoja 'AUX': definiciones (Tipo, Descripción, Unidad, Costo)."""
+    result: list[Auxiliar] = []
+    for rn in sorted(rows.keys()):
+        if rn < 8:
+            continue
+        row = rows[rn]
+        desc = _str(row, "B")
+        if not desc:
+            continue
+        result.append(Auxiliar(
+            tipo=_str(row, "A") or "Auxiliar",
+            descripcion=desc,
+            unidad=_str(row, "C"),
+            recursos=[],
+            costo=_float(row, "D"),
+        ))
+    return result
+
+
+def _leer_gantt(rows: dict, items: list[Item]) -> list[GanttFila]:
+    """Hoja 'Gantt':
+    A Tipo | B N°_Item (= "N° + descripción") | C Un | D Cantidad | E Ctrl |
+    F..BM meses 1..60
+    """
+    items_by_num = {i.numero: i for i in items}
+    cols_mes = ['F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+                'AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR','AS','AT',
+                'AU','AV','AW','AX','AY','AZ','BA','BB','BC','BD','BE','BF','BG','BH','BI','BJ','BK','BL','BM']
+    result: list[GanttFila] = []
+    for rn in sorted(rows.keys()):
+        if rn < 8:
+            continue
+        row = rows[rn]
+        tipo = _str(row, "A")
+        if tipo not in ("Título", "Item"):
+            continue
+        b = _str(row, "B")
+        if not b:
+            continue
+        numero = b.split(" ")[0]
+        descripcion = b[len(numero):].strip() if numero != b else ""
+        item = items_by_num.get(numero)
+        meses = [_float(row, c) for c in cols_mes]
+        result.append(GanttFila(
+            tipo=tipo,
+            numero=numero,
+            item_uid=(item.uid if item else ""),
+            descripcion=descripcion or (item.descripcion if item else ""),
+            unidad=_str(row, "C") or (item.unidad if item else ""),
+            cantidad=_float(row, "D") or (item.cantidad if item else 0.0),
+            meses=meses,
+            ctrl=round(sum(meses), 6),
         ))
     return result
 
 
 def _leer_gastos_generales(rows: dict) -> list[GastoGeneral]:
+    """Hoja 'Datos GG':
+    A id | B Tipo | C Item (categoría) | D Recurso | E Unidad | F Moneda |
+    G Cantidad | H Comienzo | I Meses | J Amort% | K Costo | L Total |
+    M Aux | N Comentario
+    """
     result: list[GastoGeneral] = []
     for rn in sorted(rows.keys()):
         if rn < 8:
@@ -402,6 +511,8 @@ def _leer_gastos_generales(rows: dict) -> list[GastoGeneral]:
             amort_perc=_float(row, "J") or 1.0,
             costo_unitario=_float(row, "K"),
             total=_float(row, "L"),
+            aux=_str(row, "M"),
+            comentario=_str(row, "N"),
         ))
     return result
 
@@ -473,9 +584,12 @@ def leer_excel(ruta: str | Path) -> dict:
         materiales = _leer_materiales(sheet("MAT"), proyecto)
         subcontratos = _leer_subcontratos(sheet("SUB"), proyecto)
         items = _leer_items(sheet("Items"))
+        auxiliares = _leer_auxiliares(sheet("AUX"))
         datos_cd = _leer_datos_cd(sheet("Datos CD"))
+        datos_aux = _leer_datos_aux(sheet("Datos AUX"))
         gastos_generales = _leer_gastos_generales(sheet("Datos GG"))
         transportes = _leer_transporte(sheet("Tpte"))
+        gantt = _leer_gantt(sheet("Gantt"), items)
 
     return {
         "proyecto": proyecto.model_dump(),
@@ -485,9 +599,10 @@ def leer_excel(ruta: str | Path) -> dict:
         "materiales": [m.model_dump() for m in materiales],
         "combustibles": [c.model_dump() for c in combustibles],
         "subcontratos": [s.model_dump() for s in subcontratos],
-        "auxiliares": [],
+        "auxiliares": [a.model_dump() for a in auxiliares],
         "transportes": [t.model_dump() for t in transportes],
         "items": [i.model_dump() for i in items],
-        "datos_cd": [d.model_dump() for d in datos_cd],
+        "datos_cd": [d.model_dump() for d in (datos_cd + datos_aux)],
         "gastos_generales": [g.model_dump() for g in gastos_generales],
+        "gantt": [g.model_dump() for g in gantt],
     }

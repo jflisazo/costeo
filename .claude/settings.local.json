@@ -49,7 +49,19 @@
       "Bash(cmd.exe *)",
       "Bash(echo \"exit code: $?\")",
       "Bash(npx tsc *)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(claude install *)",
+      "Bash(fish *)",
+      "Bash(sudo -n true)",
+      "Bash(curl -s -X PATCH http://localhost:8000/api/proyectos/3/materiales -H 'Content-Type: application/json' -d '[ *)",
+      "Bash(curl -s -X PATCH http://localhost:8000/api/proyectos/3/equipos -H 'Content-Type: application/json' -d '[ *)",
+      "Bash(curl -s -X PATCH http://localhost:8000/api/proyectos/3/auxiliares -H 'Content-Type: application/json' -d '[ *)",
+      "Bash(curl -s -X PATCH http://localhost:8000/api/proyectos/3/items -H 'Content-Type: application/json' -d '[ *)",
+      "Bash(curl -s http://localhost:8000/api/proyectos/3)",
+      "Bash(curl -s -X PATCH http://localhost:8000/api/proyectos/3/datos_cd -H 'Content-Type: application/json' -d '[ *)",
+      "Bash(curl -s -X POST http://localhost:8000/api/proyectos/3/recalcular)",
+      "Bash(npx vite *)",
+      "Bash(curl -s -X POST http://localhost:8000/api/proyectos -H 'Content-Type: application/json' -d '{\"nombre\":\"Fase4-Test\"}')"
     ]
   }
 }

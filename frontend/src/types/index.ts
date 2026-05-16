@@ -12,6 +12,9 @@ export interface Proyecto {
   horas_mes_eq: number
   tasa_anual: number
   vida_util_hs: number
+  efi_mo: number
+  incr_mo: number
+  coef_oferta: number
 }
 
 export interface Equipo {
@@ -145,6 +148,7 @@ export interface CicloTransporte {
 export interface DatoCD {
   item_aux: 'Item' | 'Aux'
   item_id: string
+  item_uid?: string
   tarea: string
   tarea_unidad: string
   incidencia: number
@@ -152,7 +156,14 @@ export interface DatoCD {
   tipo_recurso: string
   recurso: string
   cuantia: number
+  perc_hs_paro: number
+  perc_esf_rr: number
+  perc_esf_go: number
   comentario: string
+  // calculados
+  unidad_recurso: string
+  costo_recurso: number
+  cu_tarea: number
   cuantia_por_unidad: number
   costo_unitario: number
 }
@@ -185,6 +196,7 @@ export interface GastoGeneral {
   meses: number
   amort_perc: number
   costo_unitario: number
+  aux: string
   comentario: string
   total: number
 }
@@ -193,6 +205,17 @@ export interface PlanTrabajo {
   item_id: string
   descripcion: string
   distribucion: number[]
+}
+
+export interface GanttFila {
+  tipo: 'Título' | 'Item'
+  numero: string
+  item_uid?: string
+  descripcion: string
+  unidad: string
+  cantidad: number
+  meses: number[]      // longitud 60
+  ctrl: number
 }
 
 export interface ProyectoEstado {
@@ -209,6 +232,7 @@ export interface ProyectoEstado {
   datos_cd: DatoCD[]
   gastos_generales: GastoGeneral[]
   plan_trabajos: PlanTrabajo[]
+  gantt: GanttFila[]
 }
 
 export interface ProyectoRecord {

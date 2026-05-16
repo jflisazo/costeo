@@ -17,18 +17,18 @@ from calculos import recalcular_todo
 from calculos.costos_directos import asignar_uids_items
 from importar.excel_reader import leer_excel
 from models import (
-    Auxiliar, Combustible, CicloTransporte, DatoCD, Equipo,
+    Auxiliar, Combustible, CicloTransporte, DatoCD, Equipo, GanttFila,
     GastoGeneral, Item, Material, MOJornalizada, MOMensualizada,
     Proyecto, Subcontrato,
 )
-from models.presupuesto import PlanTrabajo
 
 router = APIRouter()
 
 SECCIONES = {
     "proyecto", "equipos", "mo_jornalizada", "mo_mensualizada",
     "materiales", "combustibles", "subcontratos", "auxiliares",
-    "transportes", "items", "datos_cd", "gastos_generales", "plan_trabajos",
+    "transportes", "items", "datos_cd", "gastos_generales",
+    "plan_trabajos", "gantt",
 }
 
 
@@ -47,6 +47,7 @@ def _estado_vacio() -> dict:
         "datos_cd": [],
         "gastos_generales": [],
         "plan_trabajos": [],
+        "gantt": [],
     }
 
 
@@ -71,6 +72,7 @@ def _deserializar(estado: dict) -> dict:
         "datos_cd":   [DatoCD(**d) for d in estado.get("datos_cd", [])],
         "items":      [Item(**i) for i in estado.get("items", [])],
         "gastos_generales": [GastoGeneral(**g) for g in estado.get("gastos_generales", [])],
+        "gantt":      [GanttFila(**g) for g in estado.get("gantt", [])],
     }
 
 
@@ -149,7 +151,7 @@ def recalcular(pid: int, db: Session = Depends(get_db)):
         m["proyecto"], m["equipos"], m["mo_jorn"], m["mo_mens"],
         m["materiales"], m["combustibles"], m["subcontratos"],
         m["auxiliares"], m["transportes"], m["datos_cd"],
-        m["items"], m["gastos_generales"],
+        m["items"], m["gastos_generales"], m["gantt"],
     )
     nuevo_estado = dict(rec.estado)
     for k, v in resultado.items():
@@ -163,23 +165,24 @@ def recalcular(pid: int, db: Session = Depends(get_db)):
 
 
 def _aplicar_uids(estado: dict) -> dict:
-    """Asigna UIDs a items y datos_cd, y calcula margen implícito por ítem desde precio importado."""
+    """Asigna UIDs a items y datos_cd, y calcula coef_oferta global desde precio importado."""
     items_raw = [Item(**i) for i in estado.get("items", [])]
     datos_raw = [DatoCD(**d) for d in estado.get("datos_cd", [])]
     items_con_uid, datos_con_uid = asignar_uids_items(items_raw, datos_raw)
 
-    # Calcular margen implícito desde precio_unitario importado
-    items_con_margen = []
-    for item in items_con_uid:
-        if item.tipo == "Item" and item.costo_unitario > 0 and item.precio_unitario > item.costo_unitario:
-            margen = round(item.precio_unitario / item.costo_unitario - 1.0, 6)
-            items_con_margen.append(item.model_copy(update={"margen": margen}))
-        else:
-            items_con_margen.append(item)
+    # Coef. oferta global = sum(precio_total) / sum(costo_total) sobre ítems con CU>0
+    total_costo = sum(i.costo_total for i in items_con_uid
+                      if i.tipo == "Item" and i.costo_total > 0)
+    total_precio = sum(i.precio_total for i in items_con_uid
+                       if i.tipo == "Item" and i.costo_total > 0)
+    coef = round(total_precio / total_costo, 6) if total_costo > 0 else 1.0
 
     estado = dict(estado)
-    estado["items"] = [i.model_dump() for i in items_con_margen]
+    estado["items"] = [i.model_dump() for i in items_con_uid]
     estado["datos_cd"] = [d.model_dump() for d in datos_con_uid]
+    proyecto_dict = dict(estado.get("proyecto", {}))
+    proyecto_dict["coef_oferta"] = coef
+    estado["proyecto"] = proyecto_dict
     return estado
 
 
@@ -200,6 +203,7 @@ async def importar_excel(
     finally:
         os.unlink(tmp_path)
     estado_importado.setdefault("plan_trabajos", [])
+    estado_importado.setdefault("gantt", [])
     estado_importado = _aplicar_uids(estado_importado)
     rec.estado = estado_importado
     rec.updated_at = datetime.utcnow()
@@ -225,6 +229,7 @@ async def importar_json(
     except Exception as e:
         raise HTTPException(400, f"JSON inválido: {e}")
     estado_importado.setdefault("plan_trabajos", [])
+    estado_importado.setdefault("gantt", [])
     estado_importado = _aplicar_uids(estado_importado)
     rec.estado = estado_importado
     rec.updated_at = datetime.utcnow()

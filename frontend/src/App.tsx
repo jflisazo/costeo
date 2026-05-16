@@ -9,7 +9,10 @@ import Combustibles from './pages/Combustibles'
 import Subcontratos from './pages/Subcontratos'
 import Auxiliares from './pages/Auxiliares'
 import Items from './pages/Items'
+import DatosCD from './pages/DatosCD'
+import DatosAux from './pages/DatosAux'
 import GastosGenerales from './pages/GastosGenerales'
+import Gantt from './pages/Gantt'
 import Presupuesto from './pages/Presupuesto'
 import ImportarExcel from './pages/ImportarExcel'
 
@@ -27,7 +30,10 @@ export default function App() {
         <Route path="subcontratos" element={<Subcontratos />} />
         <Route path="auxiliares" element={<Auxiliares />} />
         <Route path="items" element={<Items />} />
+        <Route path="datos-cd" element={<DatosCD />} />
+        <Route path="datos-aux" element={<DatosAux />} />
         <Route path="gg" element={<GastosGenerales />} />
+        <Route path="gantt" element={<Gantt />} />
         <Route path="presupuesto" element={<Presupuesto />} />
         <Route path="importar" element={<ImportarExcel />} />
       </Route>

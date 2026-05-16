@@ -4,7 +4,7 @@ from .recursos import (
     Material, Combustible, Subcontrato,
     Auxiliar, RecursoAux, CicloTransporte,
 )
-from .items import Item, DatoCD, GastoGeneral
+from .items import Item, DatoCD, GastoGeneral, GanttFila
 from .presupuesto import ResumenPresupuesto, PlanTrabajo
 
 __all__ = [
@@ -12,6 +12,6 @@ __all__ = [
     "Equipo", "MOJornalizada", "MOMensualizada",
     "Material", "Combustible", "Subcontrato",
     "Auxiliar", "RecursoAux", "CicloTransporte",
-    "Item", "DatoCD", "GastoGeneral",
+    "Item", "DatoCD", "GastoGeneral", "GanttFila",
     "ResumenPresupuesto", "PlanTrabajo",
 ]

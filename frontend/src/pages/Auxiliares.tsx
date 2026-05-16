@@ -74,8 +74,8 @@ export default function Auxiliares() {
               onChange={e => setRows(prev => prev.map((a, i) => i === ai ? { ...a, descripcion: e.target.value } : a))} />
             <Input size="small" style={{ width: 90 }} placeholder="Unidad" value={aux.unidad}
               onChange={e => setRows(prev => prev.map((a, i) => i === ai ? { ...a, unidad: e.target.value } : a))} />
-            <Button size="small" icon={<EditOutlined />} onClick={() => navigate(`/p/${pid}/items`)}>
-              Editar recursos en Datos CD
+            <Button size="small" icon={<EditOutlined />} onClick={() => navigate(`/p/${pid}/datos-aux`)}>
+              Editar recursos en Datos Aux
             </Button>
           </Space>
           {recursos.length === 0
@@ -92,7 +92,7 @@ export default function Auxiliares() {
     <>
       <Title level={3}>⚗️ Auxiliares y Elaborados</Title>
       <Alert type="info" showIcon style={{ marginBottom: 12 }}
-        message="Los recursos de cada auxiliar se editan ahora en la página de Datos CD (filtro Aux)."
+        message="Los recursos de cada auxiliar se editan en la página Datos Aux."
         description="Acá podés crear/eliminar auxiliares y cambiarles nombre o unidad." />
       <Space style={{ marginBottom: 12 }}>
         <Button icon={<PlusOutlined />}
